@@ -7,23 +7,19 @@ import polars_talib as plta
 
 def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
     lookback: int = parameter['lookback']
+    threshold: int = parameter['threshold'] * lookback
 
     o: pl.Expr = pl.col('open')
     h: pl.Expr = pl.col('high')
     l: pl.Expr = pl.col('low')
     c: pl.Expr = pl.col('close')
 
-    bull_bar: pl.Expr = (c > o) & ((o - l) > (c - o))
-    bear_bar: pl.Expr = (c < o) & ((h - o) > (o - c))
+    bull_bar: pl.Expr = (c > o) & ((c - l) > (h - c))
+    bear_bar: pl.Expr = (c < o) & ((c - l) < (h - c))
     bull_count: pl.Expr = bull_bar.cast(pl.Int32).rolling_sum(window_size=lookback)
     bear_count: pl.Expr = bear_bar.cast(pl.Int32).rolling_sum(window_size=lookback)
-    diff: pl.Expr = (bull_count - bear_count)
-    fast_ma: pl.Expr = plta.ht_trendline(diff)
-    slow_ma: pl.Expr = fast_ma.rolling_mean(lookback)
-    uptrend_trigger_init: pl.Expr = (fast_ma > slow_ma)
-    downtrend_trigger_init: pl.Expr = (fast_ma < slow_ma)
-    uptrend_trigger: pl.Expr = uptrend_trigger_init & uptrend_trigger_init.shift(1).not_()
-    downtrend_trigger: pl.Expr = downtrend_trigger_init & downtrend_trigger_init.shift(1).not_()
+    uptrend_trigger: pl.Expr = (bull_count > bear_count) & (bull_count >= threshold)
+    downtrend_trigger: pl.Expr = (bull_count < bear_count) & (bear_count >= threshold)
 
     df = df.with_columns(
         stdev=c.rolling_std(parameter['stdev']).cast(pl.Float64),
@@ -74,16 +70,18 @@ def trade_logic(prev_row: np.ndarray, col: dict[str, int], prev_position: int,
 
 def parameters(routine: str | None = None) -> list:
     # parameter scaling: [1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
-    headers: list[str] = ['stdev', 'lookback']
+    headers: list[str] = ['stdev', 'lookback', 'threshold']
     match routine:
         case 'parameter_range':
             stdev: list[int] = [8, 16, 32, 64, 128, 256, 512]
-            lookback: list[int] = [8, 16, 32, 64, 128, 256]
+            lookback: list[int] = [8, 16, 32, 64, 128, 256, 512]
+            threshold: list[float] = [0.1, 0.2, 0.3, 0.4, 0.5]
         case _:
             stdev = [512]
-            lookback = [8, 16, 32, 64, 128, 256]
+            lookback = [8, 16, 32, 64, 128, 256, 512]
+            threshold = [0.1, 0.2, 0.3, 0.4, 0.5]
 
-    values: Any = iter_product(stdev, lookback)
+    values: Any = iter_product(stdev, lookback, threshold)
 
     dict_parameters: list[dict] = [dict(zip(headers, value)) for value in values]
     return dict_parameters
