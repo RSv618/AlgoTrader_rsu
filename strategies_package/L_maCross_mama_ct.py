@@ -6,14 +6,15 @@ import polars_talib as plta
 
 
 def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
-    lookback: int = parameter['lookback']
 
     c: pl.Expr = pl.col('close')
 
-    fast_ma: pl.Expr = plta.mama(c, int(lookback // 2))
-    slow_ma: pl.Expr = plta.mama(c, lookback)
-    uptrend_trigger_init: pl.Expr = (fast_ma < slow_ma)
-    downtrend_trigger_init: pl.Expr = (fast_ma > slow_ma)
+    mama: pl.Expr = plta.mama()
+    mama_df: pl.DataFrame = df.select(mama=mama).unnest('mama')
+    df = df.with_columns(fama=mama_df['fama'], mama=mama_df['mama'])
+
+    uptrend_trigger_init: pl.Expr = (pl.col('mama') < pl.col('fama'))
+    downtrend_trigger_init: pl.Expr = (pl.col('mama') > pl.col('fama'))
     uptrend_trigger: pl.Expr = uptrend_trigger_init & uptrend_trigger_init.shift(1).not_()
     downtrend_trigger: pl.Expr = downtrend_trigger_init & downtrend_trigger_init.shift(1).not_()
 
@@ -70,12 +71,10 @@ def parameters(routine: str | None = None) -> list:
     match routine:
         case 'parameter_range':
             stdev: list[int] = [8, 16, 32, 64, 128, 256, 512]
-            lookback: list[int] = [8, 16, 32, 64, 128, 256, 512]
         case _:
             stdev = [512]
-            lookback = [8, 16, 32, 64, 128, 256, 512]
 
-    values: Any = iter_product(stdev, lookback)
+    values: Any = iter_product(stdev)
 
     dict_parameters: list[dict] = [dict(zip(headers, value)) for value in values]
     return dict_parameters
