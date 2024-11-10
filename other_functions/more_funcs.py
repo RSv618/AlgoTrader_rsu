@@ -103,6 +103,28 @@ def find_code_in_files(code_snippet, directory, search_for_presence=True):
                 print(f"The {code_snippet=} was not found in: {file}")
 
 
+def change_code_in_files(old, new, directory):
+    # Use glob to find all .py files in the directory
+    files = glob.glob(os.path.join(directory, "*.py"))
+
+    # Iterate over the list of files
+    for file in files:
+        # Skip __init__.py files
+        if os.path.basename(file) == '__init__.py':
+            continue
+
+        with open(file, 'r') as f:
+            # Read the file
+            content = f.read()
+
+        if content.find(old) > 0:
+            content = content.replace(old, new)
+
+            with open(file, 'w') as f:
+                f.write(content)
+                print(f'Replaced {old=} to {new=} for {file}')
+
+
 def cycle_through_numbers(iterate_over: list, qty: int):
     length = len(iterate_over)
     iterate_over.extend(iterate_over)
