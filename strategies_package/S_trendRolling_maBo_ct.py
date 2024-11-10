@@ -10,8 +10,13 @@ def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
 
     c: pl.Expr = pl.col('close')
 
-    uptrend_trigger_init: pl.Expr = c > c.shift(lookback)
-    downtrend_trigger_init: pl.Expr = c < c.shift(lookback)
+    rolling_count: pl.Expr = c.rolling_apply(
+        lambda x: sum(prev_close > x[-1] for prev_close in x[:-1]),
+        window_size=lookback
+    )
+    slow_ma: pl.Expr = rolling_count.rolling_mean(lookback)
+    uptrend_trigger_init: pl.Expr = rolling_count < slow_ma
+    downtrend_trigger_init: pl.Expr = rolling_count > slow_ma
     uptrend_trigger: pl.Expr = uptrend_trigger_init & uptrend_trigger_init.shift(1).not_()
     downtrend_trigger: pl.Expr = downtrend_trigger_init & downtrend_trigger_init.shift(1).not_()
 
@@ -68,10 +73,10 @@ def parameters(routine: str | None = None) -> list:
     match routine:
         case 'parameter_range':
             stdev: list[int] = [8, 16, 32, 64, 128, 256, 512]
-            lookback: list[int] = [8, 16, 32, 64, 128, 256, 512]
+            lookback: list[int] = [8, 16, 32, 64, 128, 256]
         case _:
             stdev = [512]
-            lookback = [8, 16, 32, 64, 128, 256, 512]
+            lookback = [8, 16, 32, 64, 128, 256]
 
     values: Any = iter_product(stdev, lookback)
 
