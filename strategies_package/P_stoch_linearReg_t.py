@@ -12,8 +12,9 @@ def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
 
     stoch: pl.Expr = plta.stochf(fastk_period=lookback)
     stoch_df: pl.DataFrame = df.select(stoch=stoch).unnest('stoch')
+    df = df.with_columns(fastk=stoch_df['fastk'])
 
-    linear_regression_angle: pl.Expr = plta.linearreg_angle(stoch_df['fastk'], timeperiod=lookback)
+    linear_regression_angle: pl.Expr = plta.linearreg_angle(pl.col('fastk'), timeperiod=lookback)
     uptrend_trigger_init: pl.Expr = (linear_regression_angle > 0)
     downtrend_trigger_init: pl.Expr = (linear_regression_angle < 0)
     uptrend_trigger: pl.Expr = uptrend_trigger_init & uptrend_trigger_init.shift(1).not_()

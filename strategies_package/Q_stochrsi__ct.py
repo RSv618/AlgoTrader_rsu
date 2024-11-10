@@ -10,7 +10,7 @@ def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
 
     c: pl.Expr = pl.col('close')
 
-    stoch: pl.Expr = plta.stoch(fastk_period=lookback)
+    stoch: pl.Expr = plta.stochrsi(timeperiod=lookback, fastk_period=lookback)
     stoch_df: pl.DataFrame = df.select(stoch=stoch).unnest('stoch')
     df = df.with_columns(fastk=stoch_df['fastk'], fastd=stoch_df['fastd'])
 
