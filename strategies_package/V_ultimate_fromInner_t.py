@@ -14,8 +14,8 @@ def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
     ultimate: pl.Expr = plta.ultosc(timeperiod1=int(0.25*lookback),
                                     timeperiod2=int(0.5*lookback),
                                     timeperiod3=lookback)
-    uptrend_trigger_init: pl.Expr = ultimate < 100 - threshold
-    downtrend_trigger_init: pl.Expr = ultimate > threshold
+    uptrend_trigger_init: pl.Expr = ultimate > threshold
+    downtrend_trigger_init: pl.Expr = ultimate < 100 - threshold
     uptrend_trigger: pl.Expr = uptrend_trigger_init & uptrend_trigger_init.shift(1).not_()
     downtrend_trigger: pl.Expr = downtrend_trigger_init & downtrend_trigger_init.shift(1).not_()
 
@@ -72,11 +72,11 @@ def parameters(routine: str | None = None) -> list:
     match routine:
         case 'parameter_range':
             stdev: list[int] = [8, 16, 32, 64, 128, 256, 512]
-            lookback: list[int] = [8, 16, 32, 64, 128]
+            lookback: list[int] = [8, 16, 32, 64, 128, 256, 512]
             threshold: list[int] = [70, 50]
         case _:
             stdev = [512]
-            lookback = [8, 16, 32, 64, 128]
+            lookback = [8, 16, 32, 64, 128, 256, 512]
             threshold = [70, 50]
 
     values: Any = iter_product(stdev, lookback, threshold)

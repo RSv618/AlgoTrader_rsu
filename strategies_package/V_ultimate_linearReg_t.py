@@ -7,15 +7,15 @@ import polars_talib as plta
 
 def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
     lookback: int = parameter['lookback']
-    threshold = parameter['threshold']
 
     c: pl.Expr = pl.col('close')
 
     ultimate: pl.Expr = plta.ultosc(timeperiod1=int(0.25*lookback),
                                     timeperiod2=int(0.5*lookback),
                                     timeperiod3=lookback)
-    uptrend_trigger_init: pl.Expr = ultimate > threshold
-    downtrend_trigger_init: pl.Expr = ultimate < 100 - threshold
+    linear_regression_angle: pl.Expr = plta.linearreg_angle(ultimate, timeperiod=lookback)
+    uptrend_trigger_init: pl.Expr = linear_regression_angle > 0
+    downtrend_trigger_init: pl.Expr = linear_regression_angle < 0
     uptrend_trigger: pl.Expr = uptrend_trigger_init & uptrend_trigger_init.shift(1).not_()
     downtrend_trigger: pl.Expr = downtrend_trigger_init & downtrend_trigger_init.shift(1).not_()
 
@@ -68,18 +68,16 @@ def trade_logic(prev_row: np.ndarray, col: dict[str, int], prev_position: int,
 
 def parameters(routine: str | None = None) -> list:
     # parameter scaling: [1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
-    headers: list[str] = ['stdev', 'lookback', 'threshold']
+    headers: list[str] = ['stdev', 'lookback']
     match routine:
         case 'parameter_range':
             stdev: list[int] = [8, 16, 32, 64, 128, 256, 512]
-            lookback: list[int] = [8, 16, 32, 64, 128]
-            threshold: list[int] = [70, 50]
+            lookback: list[int] = [8, 16, 32, 64, 128, 256]
         case _:
             stdev = [512]
-            lookback = [8, 16, 32, 64, 128]
-            threshold = [70, 50]
+            lookback = [8, 16, 32, 64, 128, 256]
 
-    values: Any = iter_product(stdev, lookback, threshold)
+    values: Any = iter_product(stdev, lookback)
 
     dict_parameters: list[dict] = [dict(zip(headers, value)) for value in values]
     return dict_parameters
