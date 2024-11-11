@@ -956,6 +956,7 @@ def backtest(symbol: str, date_from: datetime, date_to: datetime, strategy: Modu
     # Drop nulls and readjusts date_from
     # import copy
     # df_orig = copy.deepcopy(df) # for checking df_orig data before dropping nulls
+    df = df.filter(pl.sum_horizontal(pl.col(list(pl.FLOAT_DTYPES)).is_nan()) == 0)  # drop_nan
     df = df.drop_nulls().set_sorted('timestamp')
     if initial_len - len(df) > 512 + 32:
         warn(f'{metadata['strategy']} indicator with parameter {parameter} requires more than 512 buffer size.')

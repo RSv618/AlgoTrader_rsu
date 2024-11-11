@@ -87,20 +87,6 @@
             </Attribute>
           </value>
         </entry>
-        <entry key="\results\summary Nov10_20h17m45s.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
-        <entry key="\results\train Nov10_20h17m45s.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
       </map>
     </option>
   </component>
