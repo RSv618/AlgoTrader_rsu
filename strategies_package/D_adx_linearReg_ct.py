@@ -20,14 +20,11 @@ def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
 
     df = df.with_columns(
         stdev=c.rolling_std(parameter['stdev']).cast(pl.Float64),
+        linear_regression_angle=adx.cast(pl.Float64),
         uptrend_trigger=uptrend_trigger.cast(pl.Boolean),
         downtrend_trigger=downtrend_trigger.cast(pl.Boolean),
         uptrend_filter=uptrend_filter,
         downtrend_filter=downtrend_filter,
-        # uptrend_entry=pl.lit(0.0).cast(pl.Float64),
-        # downtrend_entry=pl.lit(0.0).cast(pl.Float64),
-        # uptrend_exit=pl.lit(0.0).cast(pl.Float64),
-        # downtrend_exit=pl.lit(0.0).cast(pl.Float64),
     )
     return df
 

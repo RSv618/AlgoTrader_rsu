@@ -26,7 +26,7 @@ def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
         uptrend_trigger=uptrend_trigger.cast(pl.Boolean),
         downtrend_trigger=downtrend_trigger.cast(pl.Boolean),
         uptrend_filter=uptrend_filter.cast(pl.Boolean),
-        downtrend_filter=downtrend_filter.cast(pl.Boolean)
+        downtrend_filter=downtrend_filter.cast(pl.Boolean),
     )
     return df
 

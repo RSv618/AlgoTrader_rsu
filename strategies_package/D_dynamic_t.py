@@ -13,8 +13,10 @@ def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
     window_size = df.select(window_size=plta.ht_dcperiod()).to_numpy()
 
     def calculate_dynamic_rolling(column_array: np.ndarray, window_size_array: np.ndarray) -> (np.ndarray, np.ndarray):
-        rolling_max: np.ndarray = np.empty((len(column_array),), dtype=np.float64)
-        rolling_min: np.ndarray = np.empty((len(column_array),), dtype=np.float64)
+        rolling_max: np.ndarray = np.empty((len(column_array),
+    ), dtype=np.float64)
+        rolling_min: np.ndarray = np.empty((len(column_array),
+    ), dtype=np.float64)
 
         # Iterate over each row
         for i in range(len(column_array)):
@@ -51,8 +53,9 @@ def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
 
     df = df.with_columns(
         stdev=c.rolling_std(parameter['stdev']).cast(pl.Float64),
+        entry_high=entry_high.cast(pl.Float64),
         uptrend_trigger=uptrend_trigger.cast(pl.Boolean),
-        downtrend_trigger=downtrend_trigger.cast(pl.Boolean)
+        downtrend_trigger=downtrend_trigger.cast(pl.Boolean),
     )
     return df
 

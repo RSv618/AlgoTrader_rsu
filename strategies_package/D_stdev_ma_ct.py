@@ -11,7 +11,8 @@ def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
     c: pl.Expr = pl.col('close')
 
     stddev: pl.Expr = plta.stddev(timeperiod=lookback)
-    uptrend_filter: pl.Expr = stddev > stddev.rolling_mean(256)
+    stdev_mean: pl.Expr = stddev.rolling_mean(256)
+    uptrend_filter: pl.Expr = stddev > stdev_mean
     downtrend_filter: pl.Expr = uptrend_filter
     uptrend_trigger_init: pl.Expr = (c > c.rolling_max(lookback).shift(1))
     downtrend_trigger_init: pl.Expr = (c < c.rolling_min(lookback).shift(1))
@@ -20,14 +21,11 @@ def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
 
     df = df.with_columns(
         stdev=c.rolling_std(parameter['stdev']).cast(pl.Float64),
+        stdev_mean=stdev_mean.cast(pl.Float64),
         uptrend_trigger=uptrend_trigger.cast(pl.Boolean),
         downtrend_trigger=downtrend_trigger.cast(pl.Boolean),
         uptrend_filter=uptrend_filter,
         downtrend_filter=downtrend_filter,
-        # uptrend_entry=pl.lit(0.0).cast(pl.Float64),
-        # downtrend_entry=pl.lit(0.0).cast(pl.Float64),
-        # uptrend_exit=pl.lit(0.0).cast(pl.Float64),
-        # downtrend_exit=pl.lit(0.0).cast(pl.Float64),
     )
     return df
 

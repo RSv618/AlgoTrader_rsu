@@ -12,8 +12,7 @@ def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
 
     rolling_count: pl.Expr = c.rolling_apply(
         lambda x: sum(prev_close > x[-1] for prev_close in x[:-1]),
-        window_size=lookback
-    )
+        window_size=lookback)
     slow_ma: pl.Expr = rolling_count.rolling_mean(lookback)
     uptrend_trigger_init: pl.Expr = rolling_count > slow_ma
     downtrend_trigger_init: pl.Expr = rolling_count < slow_ma
@@ -22,14 +21,9 @@ def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
 
     df = df.with_columns(
         stdev=c.rolling_std(parameter['stdev']).cast(pl.Float64),
+        slow_ma=slow_ma.cast(pl.Float64),
         uptrend_trigger=uptrend_trigger.cast(pl.Boolean),
         downtrend_trigger=downtrend_trigger.cast(pl.Boolean),
-        # uptrend_filter=pl.lit(True).cast(pl.Boolean),
-        # downtrend_filter=pl.lit(True).cast(pl.Boolean),
-        # uptrend_entry=pl.lit(0.0).cast(pl.Float64),
-        # downtrend_entry=pl.lit(0.0).cast(pl.Float64),
-        # uptrend_exit=pl.lit(0.0).cast(pl.Float64),
-        # downtrend_exit=pl.lit(0.0).cast(pl.Float64),
     )
     return df
 
