@@ -21,6 +21,7 @@ def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
 
     df = df.with_columns(
         stdev=c.rolling_std(parameter['stdev']).cast(pl.Float64),
+        slow_ma=slow_ma.cast(pl.Float64),
         uptrend_trigger=uptrend_trigger.cast(pl.Boolean),
         downtrend_trigger=downtrend_trigger.cast(pl.Boolean),
         uptrend_filter=uptrend_filter.cast(pl.Boolean),

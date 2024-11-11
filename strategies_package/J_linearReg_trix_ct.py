@@ -12,8 +12,6 @@ def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
 
     linear_angle: pl.Expr = plta.linearreg_angle(c, lookback) + 90.0
     trix: pl.Expr = plta.trix(linear_angle, lookback)
-    if not df.filter(linear_angle < 0).is_empty():
-        raise ValueError('linear_angle column contains negative values. Cannot use Trix indicator.')
     uptrend_trigger_init: pl.Expr = trix < 0
     downtrend_trigger_init: pl.Expr = trix > 0
     uptrend_trigger: pl.Expr = uptrend_trigger_init & uptrend_trigger_init.shift(1).not_()
@@ -22,7 +20,6 @@ def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
     df = df.with_columns(
         stdev=c.rolling_std(parameter['stdev']).cast(pl.Float64),
         trix=trix.cast(pl.Float64),
-        linear_regression_angle=linear_regression_angle.cast(pl.Float64),
         uptrend_trigger=uptrend_trigger.cast(pl.Boolean),
         downtrend_trigger=downtrend_trigger.cast(pl.Boolean),
     )

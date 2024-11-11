@@ -3,6 +3,7 @@ import numpy as np
 from typing import Any
 from itertools import product as iter_product
 import polars_talib as plta
+#continue__here
 
 
 def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
@@ -23,6 +24,7 @@ def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
 
     df = df.with_columns(
         stdev=c.rolling_std(parameter['stdev']).cast(pl.Float64),
+        macd_histogram=macd_histogram.cast(pl.Float64),
         uptrend_trigger=uptrend_trigger.cast(pl.Boolean),
         downtrend_trigger=downtrend_trigger.cast(pl.Boolean),
     )
