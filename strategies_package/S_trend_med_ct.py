@@ -11,13 +11,15 @@ def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
     c: pl.Expr = pl.col('close')
     price: pl.Expr = plta.medprice()
 
-    uptrend_trigger_init: pl.Expr = price < price.shift(lookback)
-    downtrend_trigger_init: pl.Expr = price > price.shift(lookback)
+    shifted: pl.Expr = price.shift(lookback)
+    uptrend_trigger_init: pl.Expr = price < shifted
+    downtrend_trigger_init: pl.Expr = price > shifted
     uptrend_trigger: pl.Expr = uptrend_trigger_init & uptrend_trigger_init.shift(1).not_()
     downtrend_trigger: pl.Expr = downtrend_trigger_init & downtrend_trigger_init.shift(1).not_()
 
     df = df.with_columns(
         stdev=c.rolling_std(parameter['stdev']).cast(pl.Float64),
+        shifted=shifted.cast(pl.Float64),
         uptrend_trigger=uptrend_trigger.cast(pl.Boolean),
         downtrend_trigger=downtrend_trigger.cast(pl.Boolean),
     )

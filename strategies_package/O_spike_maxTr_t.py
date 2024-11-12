@@ -11,11 +11,13 @@ def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
     c: pl.Expr = pl.col('close')
 
     spike_magnitude: pl.Expr = plta.trange()
-    uptrend_trigger: pl.Expr = (spike_magnitude > spike_magnitude.rolling_max(lookback).shift(1)) & (c > c.shift(1))
-    downtrend_trigger: pl.Expr = (spike_magnitude > spike_magnitude.rolling_max(lookback).shift(1)) & (c < c.shift(1))
+    spike_roll_max: pl.Expr = spike_magnitude.rolling_max(lookback)
+    uptrend_trigger: pl.Expr = (spike_magnitude > spike_roll_max.shift(1)) & (c > c.shift(1))
+    downtrend_trigger: pl.Expr = (spike_magnitude > spike_roll_max.shift(1)) & (c < c.shift(1))
 
     df = df.with_columns(
         stdev=c.rolling_std(parameter['stdev']).cast(pl.Float64),
+        spike_roll_max=spike_roll_max.cast(pl.Float64),
         uptrend_trigger=uptrend_trigger.cast(pl.Boolean),
         downtrend_trigger=downtrend_trigger.cast(pl.Boolean),
     )

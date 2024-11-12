@@ -15,7 +15,7 @@ def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
     df = df.with_columns(fastk=stoch_df['fastk'])
 
     fastk: pl.Expr = pl.col('fastk')
-    trix: pl.Expr = plta.trix(fastk, lookback)
+    trix: pl.Expr = plta.trix(fastk, lookback//2)
     uptrend_trigger_init: pl.Expr = (trix > 0)
     downtrend_trigger_init: pl.Expr = (trix < 0)
     uptrend_trigger: pl.Expr = uptrend_trigger_init & uptrend_trigger_init.shift(1).not_()

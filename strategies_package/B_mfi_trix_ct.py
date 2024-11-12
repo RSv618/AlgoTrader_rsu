@@ -11,7 +11,7 @@ def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
     c: pl.Expr = pl.col('close')
 
     mfi: pl.Expr = plta.mfi(timeperiod=lookback)
-    trix: pl.Expr = plta.trix(mfi, timeperiod=lookback)
+    trix: pl.Expr = plta.trix(mfi, timeperiod=lookback//2)
     uptrend_trigger_init: pl.Expr = (trix < 0)
     downtrend_trigger_init: pl.Expr = (trix > 0)
     uptrend_trigger: pl.Expr = uptrend_trigger_init & uptrend_trigger_init.shift(1).not_()
@@ -68,7 +68,7 @@ def parameters(routine: str | None = None) -> list:
             lookback: list[int] = [8, 16, 32, 64, 128, 256]
         case _:
             stdev = [512]
-            lookback = [8, 16, 32, 64, 128, 256, 512]
+            lookback = [8, 16, 32, 64, 128, 256]
 
     values: Any = iter_product(stdev, lookback)
 

@@ -10,8 +10,8 @@ def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
 
     c: pl.Expr = pl.col('close')
 
-    plus_dm: pl.Expr = plta.trix(plta.plus_dm(timeperiod=lookback), timeperiod=lookback)
-    minus_dm: pl.Expr = plta.trix(plta.minus_dm(timeperiod=lookback), timeperiod=lookback)
+    plus_dm: pl.Expr = plta.trix(plta.plus_dm(timeperiod=lookback), timeperiod=lookback//2)
+    minus_dm: pl.Expr = plta.trix(plta.minus_dm(timeperiod=lookback), timeperiod=lookback//2)
     uptrend_trigger_init: pl.Expr = (plus_dm < 0) & (minus_dm > 0)
     downtrend_trigger_init: pl.Expr = (plus_dm > 0) & (minus_dm < 0)
     uptrend_trigger: pl.Expr = uptrend_trigger_init & uptrend_trigger_init.shift(1).not_()
@@ -65,10 +65,10 @@ def parameters(routine: str | None = None) -> list:
     match routine:
         case 'parameter_range':
             stdev: list[int] = [8, 16, 32, 64, 128, 256, 512]
-            lookback: list[int] = [8, 16, 32, 64, 128, 256, 512]
+            lookback: list[int] = [8, 16, 32, 64, 128, 256]
         case _:
             stdev = [512]
-            lookback = [8, 16, 32, 64, 128, 256, 512]
+            lookback = [8, 16, 32, 64, 128, 256]
 
     values: Any = iter_product(stdev, lookback)
 

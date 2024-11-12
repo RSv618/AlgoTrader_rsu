@@ -69,7 +69,7 @@ def parameters(routine: str | None = None) -> list:
     match routine:
         case 'parameter_range':
             stdev: list[int] = [8, 16, 32, 64, 128, 256, 512]
-            slow: list[int] = [16, 32, 64, 128, 256, 512]
+            slow: list[int] = [16, 32, 64, 128, 256]
             fast_m: list[float] = [0.5]
         case _:
             stdev = [512]

@@ -11,8 +11,9 @@ def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
     c: pl.Expr = pl.col('close')
     price: pl.Expr = plta.avgprice()
 
-    uptrend_trigger_init: pl.Expr = price < price.shift(lookback)
-    downtrend_trigger_init: pl.Expr = price > price.shift(lookback)
+    shifted: pl.Expr = price.shift(lookback)
+    uptrend_trigger_init: pl.Expr = price < shifted
+    downtrend_trigger_init: pl.Expr = price > shifted
     uptrend_trigger: pl.Expr = uptrend_trigger_init & uptrend_trigger_init.shift(1).not_()
     downtrend_trigger: pl.Expr = downtrend_trigger_init & downtrend_trigger_init.shift(1).not_()
 

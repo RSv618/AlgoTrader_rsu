@@ -956,7 +956,7 @@ def backtest(symbol: str, date_from: datetime, date_to: datetime, strategy: Modu
     # Drop nulls and readjusts date_from
     df = df.filter(pl.sum_horizontal(pl.col(list(pl.FLOAT_DTYPES)).is_nan()) == 0).drop_nulls()
     df = df.set_sorted('timestamp')
-    if initial_len - len(df) > 512 + 32:
+    if initial_len - len(df) > 512 + 128:
         warn(f'{metadata['strategy']} indicator with parameter {parameter} requires more than 512 buffer size.')
     timestamps_np: np.ndarray = df['timestamp'].to_numpy()
     date_from_index: int = max(1, np.searchsorted(timestamps_np, metadata['date_from'].timestamp() * 1e9))

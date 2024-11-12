@@ -63,10 +63,10 @@ def parameters(routine: str | None = None) -> list:
     match routine:
         case 'parameter_range':
             stdev: list[int] = [8, 16, 32, 64, 128, 256, 512]
-            lookback: list[int] = [8, 16, 32, 64, 128, 256, 512]
+            lookback: list[int] = [4, 8, 16, 32, 64, 128]
         case _:
             stdev = [512]
-            lookback = [8, 16, 32, 64, 128, 256, 512]
+            lookback = [4, 8, 16, 32, 64, 128]
 
     values: Any = iter_product(stdev, lookback)
 

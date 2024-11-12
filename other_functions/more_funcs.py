@@ -103,7 +103,7 @@ def find_code_in_files(code_snippet, directory, search_for_presence=True):
                 print(f"The {code_snippet=} was not found in: {file}")
 
 
-def change_code_in_files(old, new, directory):
+def change_code_in_files(old, new, keyword, directory):
     # Use glob to find all .py files in the directory
     files = glob.glob(os.path.join(directory, "*.py"))
 
@@ -111,6 +111,8 @@ def change_code_in_files(old, new, directory):
     for file in files:
         # Skip __init__.py files
         if os.path.basename(file) == '__init__.py':
+            continue
+        if os.path.basename(file).find(keyword) == -1:
             continue
 
         with open(file, 'r') as f:

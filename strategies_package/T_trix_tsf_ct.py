@@ -19,7 +19,6 @@ def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
     df = df.with_columns(
         stdev=c.rolling_std(parameter['stdev']).cast(pl.Float64),
         tsf=tsf.cast(pl.Float64),
-        trix=trix.cast(pl.Float64),
         uptrend_trigger=uptrend_trigger.cast(pl.Boolean),
         downtrend_trigger=downtrend_trigger.cast(pl.Boolean),
     )
@@ -65,10 +64,10 @@ def parameters(routine: str | None = None) -> list:
     match routine:
         case 'parameter_range':
             stdev: list[int] = [8, 16, 32, 64, 128, 256, 512]
-            lookback: list[int] = [8, 16, 32, 64, 128, 256]
+            lookback: list[int] = [4, 8, 16, 32, 64, 128]
         case _:
             stdev = [512]
-            lookback = [8, 16, 32, 64, 128, 256]
+            lookback = [4, 8, 16, 32, 64, 128]
 
     values: Any = iter_product(stdev, lookback)
 

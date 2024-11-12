@@ -12,7 +12,7 @@ def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
     c: pl.Expr = pl.col('close')
     price: pl.Expr = plta.avgprice()
 
-    rolling_count: pl.Expr = price.rolling_apply(
+    rolling_count: pl.Expr = price.rolling_map(
         lambda x: sum(prev_close > x[-1] for prev_close in x[:-1]),
         window_size=lookback)
     uptrend_trigger_init: pl.Expr = lookback - rolling_count > threshold
@@ -22,6 +22,7 @@ def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
 
     df = df.with_columns(
         stdev=c.rolling_std(parameter['stdev']).cast(pl.Float64),
+        rolling_count=rolling_count.cast(pl.Int32),
         uptrend_trigger=uptrend_trigger.cast(pl.Boolean),
         downtrend_trigger=downtrend_trigger.cast(pl.Boolean),
     )

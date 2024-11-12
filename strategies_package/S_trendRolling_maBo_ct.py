@@ -10,7 +10,7 @@ def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
 
     c: pl.Expr = pl.col('close')
 
-    rolling_count: pl.Expr = c.rolling_apply(
+    rolling_count: pl.Expr = c.rolling_map(
         lambda x: sum(prev_close > x[-1] for prev_close in x[:-1]),
         window_size=lookback)
     slow_ma: pl.Expr = rolling_count.rolling_mean(lookback)

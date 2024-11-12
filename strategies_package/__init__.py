@@ -308,12 +308,12 @@ from strategies_package.O_spike_atr_ct import *
 from strategies_package.O_spike_atr_t import *
 from strategies_package.O_spike_avg_ct import *
 from strategies_package.O_spike_avg_t import *
+from strategies_package.O_spike_maxAtr__ct import *
+from strategies_package.O_spike_maxAtr__t import *
 from strategies_package.O_spike_maxAtr_avg_ct import *
 from strategies_package.O_spike_maxAtr_avg_t import *
-from strategies_package.O_spike_maxAtr_ct import *
 from strategies_package.O_spike_maxAtr_med_ct import *
 from strategies_package.O_spike_maxAtr_med_t import *
-from strategies_package.O_spike_maxAtr_t import *
 from strategies_package.O_spike_maxAtr_typical_ct import *
 from strategies_package.O_spike_maxAtr_typical_t import *
 from strategies_package.O_spike_maxAtr_wclprice_ct import *

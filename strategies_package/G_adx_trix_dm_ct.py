@@ -10,7 +10,7 @@ def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
 
     c: pl.Expr = pl.col('close')
 
-    adx: pl.Expr = plta.trix(plta.adx(timeperiod=lookback), timeperiod=lookback)
+    adx: pl.Expr = plta.trix(plta.adx(timeperiod=lookback), timeperiod=lookback//2)
     plus_dm: pl.Expr = plta.plus_dm(timeperiod=lookback)
     minus_dm: pl.Expr = plta.minus_dm(timeperiod=lookback)
     uptrend_filter: pl.Expr = plus_dm > minus_dm
@@ -74,10 +74,10 @@ def parameters(routine: str | None = None) -> list:
     match routine:
         case 'parameter_range':
             stdev: list[int] = [8, 16, 32, 64, 128, 256, 512]
-            lookback: list[int] = [8, 16, 32, 64, 128, 256, 512]
+            lookback: list[int] = [8, 16, 32, 64, 128]
         case _:
             stdev = [512]
-            lookback = [8, 16, 32, 64, 128, 256, 512]
+            lookback = [8, 16, 32, 64, 128]
 
     values: Any = iter_product(stdev, lookback)
 
