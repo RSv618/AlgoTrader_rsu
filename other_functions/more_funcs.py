@@ -81,6 +81,114 @@ def print_best_parameters(filepath: str):
             print(f"{param} = {values_list}")
         print('')
 
+def update_best_parameters(param_trim_summary_filepath: str):
+    # Load the CSV file into a DataFrame
+    data = pd.read_csv(param_trim_summary_filepath)
+
+    # Get best stdev
+    stdev_df = pl.from_pandas(data).filter(pl.col('parameter').eq('stdev'))
+    stdev_df = stdev_df.group_by('value').agg(pl.col('mean_psr').mean())
+    stdev = stdev_df.filter(pl.col('mean_psr') == pl.col('mean_psr').max())['value'].item()
+    stdev = int(stdev) if stdev.is_integer() else stdev
+    data = data.loc[(data['parameter'] != 'stdev') & (data['parameter'].notnull())]
+
+    # Initialize a dictionary to store results
+    result = {}
+    strategy_directory = r'C:\Users\rober\PycharmProjects\AlgoTrader\strategies_package'
+
+    # Group by strategy
+    for strategy, group in data.groupby('strategy'):
+        strategy_result = {}
+
+        # Initialize parameter groups
+        param_groups = {param: param_group.sort_values('mean_psr', ascending=False)
+                        for param, param_group in group.groupby('parameter')}
+
+        # Select initial values where mean_psr > 0.3
+        for parameter, param_group in param_groups.items():
+            filtered_group = param_group[param_group['mean_psr'] > 0.3]
+            if not filtered_group.empty:
+                strategy_result[parameter] = filtered_group['value'].tolist()
+            else:
+                # If no values > 0.3, select the row with the highest mean_psr
+                strategy_result[parameter] = [param_group.iloc[0]['value']]
+
+        # Calculate combinations
+        combinations = list(product(*strategy_result.values()))
+
+        # If less than 3 combinations, prioritize adding higher mean_psr values
+        if len(combinations) < 3:
+            # Create a list to store additional potential values sorted by highest mean_psr
+            additional_values = []
+            for parameter, param_group in param_groups.items():
+                for _, row in param_group.iterrows():
+                    if row['value'] not in strategy_result[parameter]:
+                        additional_values.append((row['mean_psr'], parameter, row['value']))
+
+            # Sort additional values by mean_psr in descending order
+            additional_values.sort(reverse=True, key=lambda x: x[0])
+
+            # Add values to ensure at least three combinations
+            for _, parameter, value in additional_values:
+                if value not in strategy_result[parameter]:
+                    strategy_result[parameter].append(value)
+                    combinations = list(product(*strategy_result.values()))
+                    if len(combinations) >= 3:
+                        break
+
+        # Store the strategy result
+        result[strategy] = strategy_result
+
+    # process the aggregated results
+    for strategy, params in result.items():
+        print(f"For {strategy}:")
+        for param, values in params.items():
+            if isinstance(values[0], str):
+                if ":" not in values[0]:
+                    for string_value in values:
+                        if "." in string_value:
+                            values_list = [float(value) for value in values]
+                            break
+                    else:
+                        values_list = [int(value) for value in values]
+                else:
+                    values_list = values
+            else:
+                for value in values:
+                    if not value.is_integer():
+                        values_list = [float(value) for value in values]
+                        break
+                else:
+                    values_list = [int(value) for value in values]
+
+            values_list = sorted(values_list)
+            params[param] = values_list
+
+        string_params = ''
+        string_params_list = ''
+        for param, values in params.items():
+            string_params += f'''
+            {param} = {values}'''
+            string_params_list += f', {param}'
+        strategy_file = os.path.join(strategy_directory, f'{strategy}.py')
+        with open(strategy_file, 'r') as f:
+            # Read the file
+            content = f.read()
+        start = content.find('case _:')
+        old = content[start:]
+        new = f'''case _:
+            stdev = [{stdev}]{string_params}
+
+    values: Any = iter_product(stdev{string_params_list})
+
+    dict_parameters: list[dict] = [dict(zip(headers, value)) for value in values]
+    return dict_parameters
+'''
+        content = content.replace(old, new)
+        with open(strategy_file, 'w') as f:
+            f.write(content)
+            print(f'Updated {strategy_file}')
+
 
 def find_code_in_files(code_snippet, directory, search_for_presence=True):
     # Use glob to find all .py files in the directory
