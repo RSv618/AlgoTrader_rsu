@@ -73,10 +73,10 @@ def parameters(routine: str | None = None) -> list:
             fast_m: list[float] = [0.5]
         case _:
             stdev = [512]
-            slow = [8, 16, 32, 64, 128, 256]
             fast_m = [0.5]
+            slow = [32, 128, 256]
 
-    values: Any = iter_product(stdev, slow, fast_m)
+    values: Any = iter_product(stdev, fast_m, slow)
 
     dict_parameters: list[dict] = [dict(zip(headers, value)) for value in values]
     return dict_parameters

@@ -86,10 +86,10 @@ def parameters(routine: str | None = None) -> list:
             exit_m: list[float] = [1, 0.5]
         case _:
             stdev = [512]
-            lookback = [8, 16, 32, 64, 128, 256, 512]
-            exit_m = [1, 0.5]
+            exit_m = [1]
+            lookback = [128, 256, 512]
 
-    values: Any = iter_product(stdev, lookback, exit_m)
+    values: Any = iter_product(stdev, exit_m, lookback)
 
     dict_parameters: list[dict] = [dict(zip(headers, value)) for value in values]
     return dict_parameters

@@ -80,8 +80,8 @@ def parameters(routine: str | None = None) -> list:
             threshold: list[int] = [16, 32]
         case _:
             stdev = [512]
-            lookback = [8, 16, 32, 64, 128, 256]
-            threshold = [16, 32]
+            lookback = [64, 128, 256]
+            threshold = [32]
 
     values: Any = iter_product(stdev, lookback, threshold)
 

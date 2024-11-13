@@ -71,7 +71,7 @@ def parameters(routine: str | None = None) -> list:
             lookback: list[int] = [8, 16, 32, 64, 128]
         case _:
             stdev = [512]
-            lookback = [8, 16, 32, 64, 128]
+            lookback = [32, 64, 128]
 
     values: Any = iter_product(stdev, lookback)
 

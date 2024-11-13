@@ -69,8 +69,8 @@ def parameters(routine: str | None = None) -> list:
             threshold: list[float] = [0.08, 0.16, 0.32, 0.64]
         case _:
             stdev = [512]
-            acceleration = [0.01, 0.02, 0.04]
-            threshold = [0.08, 0.16, 0.32, 0.64]
+            acceleration = [0.01]
+            threshold = [0.16, 0.32, 0.64]
 
     values: Any = iter_product(stdev, acceleration, threshold)
 

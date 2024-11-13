@@ -79,7 +79,7 @@ def parameters(routine: str | None = None) -> list:
             count: list[int] = [8, 16, 32, 64, 128, 256, 512]
         case _:
             stdev = [512]
-            count = [8, 16, 32, 64, 128, 256, 512]
+            count = [128, 256, 512]
 
     values: Any = iter_product(stdev, count)
 

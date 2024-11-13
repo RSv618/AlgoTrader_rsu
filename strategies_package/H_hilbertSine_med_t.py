@@ -68,8 +68,9 @@ def parameters(routine: str | None = None) -> list:
             stdev: list[int] = [8, 16, 32, 64, 128, 256, 512]
         case _:
             stdev = [512]
+            stdev = [16.0, 32.0, 512.0]
 
-    values: Any = iter_product(stdev)
+    values: Any = iter_product(stdev, lookback, threshold)
 
     dict_parameters: list[dict] = [dict(zip(headers, value)) for value in values]
     return dict_parameters
