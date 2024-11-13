@@ -165,21 +165,30 @@ def update_best_parameters(param_trim_summary_filepath: str):
             params[param] = values_list
 
         string_params = ''
-        string_params_list = ''
         for param, values in params.items():
             string_params += f'''
             {param} = {values}'''
-            string_params_list += f', {param}'
         strategy_file = os.path.join(strategy_directory, f'{strategy}.py')
         with open(strategy_file, 'r') as f:
             # Read the file
             content = f.read()
+
+        start_find = content.find(r'    match routine:')
+        end = 0
+        start = 0
+        for i in range(start_find, 0, -1):
+            if content[i] == ']':
+                end = i
+            elif content[i] == '[':
+                start = i
+                break
+        string_params_list = content[start + 1: end].replace("'", "")
         start = content.find('case _:')
         old = content[start:]
         new = f'''case _:
             stdev = [{stdev}]{string_params}
 
-    values: Any = iter_product(stdev{string_params_list})
+    values: Any = iter_product({string_params_list})
 
     dict_parameters: list[dict] = [dict(zip(headers, value)) for value in values]
     return dict_parameters

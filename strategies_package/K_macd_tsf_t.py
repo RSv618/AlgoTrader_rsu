@@ -76,7 +76,7 @@ def parameters(routine: str | None = None) -> list:
             fast_m = [0.5]
             slow = [64, 128, 256]
 
-    values: Any = iter_product(stdev, fast_m, slow)
+    values: Any = iter_product(stdev, slow, fast_m)
 
     dict_parameters: list[dict] = [dict(zip(headers, value)) for value in values]
     return dict_parameters

@@ -85,7 +85,7 @@ def parameters(routine: str | None = None) -> list:
             count = [256, 512]
             lookback = [256, 512]
 
-    values: Any = iter_product(stdev, count, lookback)
+    values: Any = iter_product(stdev, lookback, count)
 
     dict_parameters: list[dict] = [dict(zip(headers, value)) for value in values]
     return dict_parameters
