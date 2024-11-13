@@ -1563,7 +1563,7 @@ def get_data(symbol: str,
     df = df.set_sorted(['timestamp'])
 
     # Buffer size: number of bars included before date_from to calculate indicator values
-    buffer: int = 512 + 64
+    buffer: int = 768
     timestamp_array: np.ndarray = df['timestamp'].to_numpy()
 
     # Find indices for the date range with buffer consideration
