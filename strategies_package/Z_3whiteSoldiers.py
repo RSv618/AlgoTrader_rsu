@@ -8,11 +8,14 @@ import polars_talib as plta
 def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
     c: pl.Expr = pl.col('close')
 
-    uptrend_trigger: pl.Expr = plta.cdl3whitesoldiers() > 0
-    downtrend_trigger: pl.Expr = plta.cdl3blackcrows() < 0
+    pattern1: pl.Expr = plta.cdl3whitesoldiers()
+    pattern2: pl.Expr = plta.cdl3blackcrows()
+    uptrend_trigger: pl.Expr = pattern1 > 0
+    downtrend_trigger: pl.Expr = pattern2 < 0
 
     df = df.with_columns(
         stdev=c.rolling_std(parameter['stdev']).cast(pl.Float64),
+        pattern=pattern1,
         uptrend_trigger=uptrend_trigger.cast(pl.Boolean),
         downtrend_trigger=downtrend_trigger.cast(pl.Boolean))
     return df

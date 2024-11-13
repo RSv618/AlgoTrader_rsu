@@ -11,7 +11,7 @@ def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
     c: pl.Expr = pl.col('close')
 
     tsf: pl.Expr = plta.tsf(c, lookback)
-    trix: pl.Expr = plta.trix(tsf, timeperiod=lookback)
+    trix: pl.Expr = plta.trix(tsf, timeperiod=lookback//2)
     uptrend_trigger_init: pl.Expr = trix < 0
     downtrend_trigger_init: pl.Expr = trix > 0
     uptrend_trigger: pl.Expr = uptrend_trigger_init & uptrend_trigger_init.shift(1).not_()
@@ -19,7 +19,6 @@ def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
 
     df = df.with_columns(
         stdev=c.rolling_std(parameter['stdev']).cast(pl.Float64),
-        tsf=tsf.cast(pl.Float64),
         trix=trix.cast(pl.Float64),
         uptrend_trigger=uptrend_trigger.cast(pl.Boolean),
         downtrend_trigger=downtrend_trigger.cast(pl.Boolean),

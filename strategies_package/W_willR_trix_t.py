@@ -11,7 +11,7 @@ def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
     c: pl.Expr = pl.col('close')
 
     willr: pl.Expr = plta.willr(timeperiod=lookback) + 100.0
-    trix: pl.Expr = plta.trix(willr, timeperiod=lookback)
+    trix: pl.Expr = plta.trix(willr, timeperiod=lookback//2)
     uptrend_trigger_init: pl.Expr = trix > 0
     downtrend_trigger_init: pl.Expr = trix < 0
     uptrend_trigger: pl.Expr = uptrend_trigger_init & uptrend_trigger_init.shift(1).not_()
