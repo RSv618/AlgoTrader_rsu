@@ -3,7 +3,7 @@
   <component name="CsvFileAttributes">
     <option name="attributeMap">
       <map>
-        <entry key="\results\01 parameter_trim.csv">
+        <entry key="\results\03 initial_selection.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />

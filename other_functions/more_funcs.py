@@ -10,8 +10,102 @@ import numpy as np
 import os
 import glob
 from other_functions import path_functions as pt
+from math import comb
+from heapq import nlargest
 
 T = TypeVar('T')
+
+
+def average_best_of_k(scores: T, k: int) -> float:
+    """
+    Compute the average of the best-of-k values from an array of scores.
+
+    Parameters:
+        scores (list or np.ndarray): Array of numbers (e.g., model performances).
+        k (int): Number of top values to consider in combinations.
+
+    Returns:
+        float: Average of the best-of-k values.
+    """
+    # Sort scores in ascending order
+    scores: T = np.sort(scores)
+    # drop nans
+    scores = scores[~np.isnan(scores)]
+    n: int = len(scores)
+
+    if k > n:
+        raise ValueError("k cannot be greater than the number of elements in scores.")
+
+    # Compute weights for each score
+    total_comb: int = comb(n, k)
+    weights: np.ndarray = np.array([
+        comb(i, k - 1) / total_comb
+        for i in range(n)
+    ])
+
+    # Calculate the weighted average
+    average: float = (weights * scores).sum()
+
+    return average
+
+
+def print_top_results(filepath: str, n_top_models: int=17, n_top_variants: int=3, n_top_symbols: int=10):
+    df: pl.DataFrame = pl.read_csv(filepath)
+    df = df.with_columns(group=pl.col('strategy').str.slice(0, 1))
+    df_filtered: pl.DataFrame = df.filter(pl.col('psr').is_not_nan()).sort('psr', descending=True)
+    # variant_performance: pl.DataFrame = (df_filtered.group_by(['strategy', 'group']).agg(pl.col('psr').mean())
+    #                                      .sort('psr', descending=True))
+    # model_performance: pl.DataFrame = (variant_performance.group_by('group').agg(pl.col('psr').mean())
+    #                                    .sort('psr', descending=True))
+    #
+    # top_models: list = sorted(model_performance['group'].head(n_top_models).to_list())
+    # top_variants: list = [variant_performance.filter(pl.col('group') == model)['strategy'].head(n_top_variants).to_list()
+    #                       for model in top_models]
+    # top_variants = sum(top_variants, [])  # Flattens the list
+    # top_symbols: dict = {variant:df_filtered.filter(pl.col('strategy') == variant)['symbol']
+    #                      .head(n_top_symbols).to_list() for variant in top_variants}
+    # print(f'Top {len(top_models)} Models:\n{top_models}')
+    # print(f'Top {n_top_variants} Variants:\n{top_variants}')
+    # print('Top Combinations:')
+    # for variant, symbols in top_symbols.items():
+    #     for symbol in symbols:
+    #         print(f'("{symbol}", st.{variant}),')
+
+
+    # use best of k algorithm to determine performance
+    all_variants: list[str] = df['strategy'].unique().to_list()
+    variant_performance: dict[str, float] = {}
+    for variant in all_variants:
+        df_filtered_variant: pl.DataFrame = df_filtered.filter(pl.col('strategy') == variant)
+        psr_values: list[float] = df_filtered_variant['psr'].to_list()
+        performance: float = average_best_of_k(psr_values, min(4, len(psr_values)))
+        variant_performance[variant] = performance
+
+    all_models: list[str] = df['group'].unique().to_list()
+    model_performance: dict[str, float] = {}
+    for model in all_models:
+        model_variants: list[str] = df_filtered.filter(pl.col('group') == model)['strategy'].unique().to_list()
+        psr_values = [variant_performance[model_variant] for model_variant in model_variants]
+        performance = average_best_of_k(psr_values, min(4, len(psr_values)))
+        model_performance[model] = performance
+    top_models: list[str] = nlargest(n_top_models, model_performance, key=model_performance.get)
+
+    top_variants: list[str] = []
+    for model in top_models:
+        model_variants = df_filtered.filter(pl.col('group') == model)['strategy'].unique().to_list()
+        subset_variants: dict[str, float] = {key:value for key, value in variant_performance.items()
+                                             if key in model_variants}
+        top_variants.extend(nlargest(n_top_variants, subset_variants, key=subset_variants.get))
+
+    top_symbols: dict = {variant:df_filtered.filter(pl.col('strategy') == variant)['symbol']
+                         .head(n_top_symbols).to_list() for variant in top_variants}
+    print(f'Top {len(top_models)} Models:\n{top_models}')
+    print(f'Top {n_top_variants} Variants:\n{top_variants}')
+    print('Top Combinations:')
+    for variant, symbols in top_symbols.items():
+        for symbol in symbols:
+            print(f'("{symbol}", st.{variant}),')
+    return
 
 
 def print_best_parameters(filepath: str):
