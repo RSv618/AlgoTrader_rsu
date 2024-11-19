@@ -526,7 +526,7 @@ def normalize_metric(df: pl.DataFrame, file_path: str, group_cols: list[str], me
     Normalizes a specified metric within groups and saves the result to a file.
 
     Parameters:
-    df_pd (pl.DataFrame): The input DataFrame.
+    df (pl.DataFrame): The input DataFrame.
     file_path (str): The file path to save the normalized DataFrame.
     group_cols (List[str]): The columns to group by for normalization.
     metric (str): The metric to normalize (default is 'psr').
@@ -822,7 +822,7 @@ def get_performance(df: pl.DataFrame, metadata: dict[str, Any], metrics: list[st
     Calculate performance metrics for the given DataFrame and metadata.
 
     Parameters:
-    df_pd (pl.DataFrame): The DataFrame containing market data with performance calculations.
+    df (pl.DataFrame): The DataFrame containing market data with performance calculations.
     metadata (dict[str, Any]): Metadata dictionary with backtest information.
     metrics (List[str]): List of performance metrics to calculate.
 
@@ -980,7 +980,7 @@ def run_loop(df: pl.DataFrame,
     Execute the backtesting loop over the provided DataFrame with the given strategy.
 
     Parameters:
-    df_pd (pl.DataFrame): The DataFrame containing market data.
+    df (pl.DataFrame): The DataFrame containing market data.
     metadata (dict[str, Any]): Metadata dictionary with backtest information.
     strategy_logic (Callable): The trading strategy logic function.
     start_equity (float): Initial equity for the backtest.

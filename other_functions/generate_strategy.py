@@ -116,48 +116,6 @@ def str_to_plstr(string_int: str, reverse=False) -> str:
 if __name__ == '__main__':
     # Parameters
     seeds: list[int] = [
-        841711,
-        841688,
-        678342,
-        841171,
-        841404,
-        816459,
-        792099,
-        530930,
-        727162,
-        841234,
-        841707,
-        841568,
-        12189,
-        183397,
-        684784,
-        665033,
-        409925,
-        840455,
-        882669,
-        644233,
-        880072,
-        438204,
-        272787,
-        32198,
-        841700,
-        70501,
-        476129,
-        841697,
-        42353,
-        222720,
-        832776,
-        864490,
-        858167,
-        91692,
-        175092,
-        460616,
-        521846,
-        740775,
-        32341,
-        103082,
-        796993,
-        841059,
     ]
 
     shifts = [0, 1, 2, 3]  # Mistake: 4 should be 3. I don't think it matters much
@@ -179,7 +137,7 @@ from typing import Any
 from itertools import product as iter_product
 
 
-def indicators(df_pd: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
+def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
     up_trigger: Any = ((REPLACE_A > REPLACE_B)
                        & (REPLACE_C > REPLACE_D)
                        & (REPLACE_E > REPLACE_F))
@@ -187,10 +145,10 @@ def indicators(df_pd: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
                          & (REPLACE_RC < REPLACE_RD)
                          & (REPLACE_RE < REPLACE_RF))
 
-    df_pd = df_pd.with_columns(stdev=pl.col('close').rolling_std(parameter['stdev']),
+    df = df.with_columns(stdev=pl.col('close').rolling_std(parameter['stdev']),
                          trigger=pl.when(up_trigger).then(1)
                          .otherwise(pl.when(down_trigger).then(-1).otherwise(0)))
-    return df_pd
+    return df
 
 
 def trade_logic(prev_row: np.ndarray, col: dict[str, int], prev_position: int,

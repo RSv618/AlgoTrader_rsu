@@ -12,6 +12,7 @@ import glob
 from other_functions import path_functions as pt
 from math import comb
 from heapq import nlargest
+from ONC_original import optimal_number_clusters as onc
 
 T = TypeVar('T')
 
