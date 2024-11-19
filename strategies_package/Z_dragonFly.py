@@ -13,7 +13,7 @@ def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
     uptrend_trigger: pl.Expr = pattern1 > 0
     downtrend_trigger: pl.Expr = pattern2 > 0
 
-    # df = df.with_columns(pattern=pattern1, pat2=pattern2, max=pattern1.max(), min=pattern1.min())
+    # df_pd = df_pd.with_columns(pattern=pattern1, pat2=pattern2, max=pattern1.max(), min=pattern1.min())
     df = df.with_columns(
         stdev=c.rolling_std(parameter['stdev']).cast(pl.Float64),
         pattern=pattern1,

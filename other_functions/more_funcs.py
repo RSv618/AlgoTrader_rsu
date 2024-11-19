@@ -16,6 +16,46 @@ from heapq import nlargest
 T = TypeVar('T')
 
 
+def initial_selection_results(initial_selection_summary_path: str, initial_selection_log_returns_path: str):
+    top_strategies_selected: dict[str, list[str]] = get_top_results(initial_selection_summary_path)
+    list_of_columns: list[str] = []
+    for strategy, symbols in top_strategies_selected.items():
+        strategy_columns: list[str] = [f'{symbol}:{strategy}' for symbol in symbols]
+        list_of_columns.extend(strategy_columns)
+    df: pl.DataFrame = pl.read_csv(initial_selection_log_returns_path)
+    df = df.select(list_of_columns)
+
+    # preprocess dataframe:
+    df_pd: pd.DataFrame = df.to_pandas().dropna(axis=1)
+    df_pd = df_pd.loc[:, (df_pd != 0).any(axis=0)]  # Drops zero columns
+    df_pd = df_pd.T.drop_duplicates().T  # Drops duplicates
+
+    # Correlation Matrix
+    corr0: pd.DataFrame = pd.DataFrame(np.corrcoef(df_pd.values, rowvar=False), columns=df_pd.columns).T
+    corr0.columns = df_pd.columns
+
+    # perform ONC to cluster returns
+    clusters: list[list[str]] = onc(corr0)
+
+    # get performance of each cluster
+    initial_selection_summary_df: pl.DataFrame = pl.read_csv(initial_selection_summary_path)
+    initial_selection_summary_df = (initial_selection_summary_df.
+                                    with_columns(cluster=pl.concat_str(["symbol", "strategy"], separator=":")))
+    max_performance: float = 0.0
+    best_cluster: list[str] = []
+    for cluster in clusters:
+        cluster_df: pl.DataFrame = initial_selection_summary_df.filter(pl.col('cluster').is_in(cluster))
+        psr_values: list[float] = cluster_df['psr'].to_list()
+        performance = average_best_of_k(psr_values, min(4, len(psr_values)))
+        if performance > max_performance:
+            max_performance = performance
+            best_cluster = cluster
+
+    for sym_strategy in best_cluster:
+        symbol, strategy = sym_strategy.split(':')
+        print(f'("{symbol}", st.{strategy}),')
+
+
 def average_best_of_k(scores: T, k: int) -> float:
     """
     Compute the average of the best-of-k values from an array of scores.
@@ -49,7 +89,9 @@ def average_best_of_k(scores: T, k: int) -> float:
     return average
 
 
-def print_top_results(filepath: str, n_top_models: int=17, n_top_variants: int=3, n_top_symbols: int=10):
+def get_top_results(filepath: str, n_top_models: int | None=None,
+                      n_top_variants: int=3, n_top_symbols: int | None=None,
+                      print_to_cli: bool = False) -> dict:
     df: pl.DataFrame = pl.read_csv(filepath)
     df = df.with_columns(group=pl.col('strategy').str.slice(0, 1))
     df_filtered: pl.DataFrame = df.filter(pl.col('psr').is_not_nan()).sort('psr', descending=True)
@@ -78,17 +120,18 @@ def print_top_results(filepath: str, n_top_models: int=17, n_top_variants: int=3
     for variant in all_variants:
         df_filtered_variant: pl.DataFrame = df_filtered.filter(pl.col('strategy') == variant)
         psr_values: list[float] = df_filtered_variant['psr'].to_list()
-        performance: float = average_best_of_k(psr_values, min(4, len(psr_values)))
-        variant_performance[variant] = performance
+        variant_performance[variant] = average_best_of_k(psr_values, min(4, len(psr_values)))
 
     all_models: list[str] = df['group'].unique().to_list()
-    model_performance: dict[str, float] = {}
-    for model in all_models:
-        model_variants: list[str] = df_filtered.filter(pl.col('group') == model)['strategy'].unique().to_list()
-        psr_values = [variant_performance[model_variant] for model_variant in model_variants]
-        performance = average_best_of_k(psr_values, min(4, len(psr_values)))
-        model_performance[model] = performance
-    top_models: list[str] = nlargest(n_top_models, model_performance, key=model_performance.get)
+    if n_top_models is None:
+        top_models: list[str] = all_models
+    else:
+        model_performance: dict[str, float] = {}
+        for model in all_models:
+            model_variants: list[str] = df_filtered.filter(pl.col('group') == model)['strategy'].unique().to_list()
+            psr_values = [variant_performance[model_variant] for model_variant in model_variants]
+            model_performance[model] = average_best_of_k(psr_values, min(4, len(psr_values)))
+        top_models = nlargest(n_top_models, model_performance, key=model_performance.get)
 
     top_variants: list[str] = []
     for model in top_models:
@@ -97,15 +140,21 @@ def print_top_results(filepath: str, n_top_models: int=17, n_top_variants: int=3
                                              if key in model_variants}
         top_variants.extend(nlargest(n_top_variants, subset_variants, key=subset_variants.get))
 
-    top_symbols: dict = {variant:df_filtered.filter(pl.col('strategy') == variant)['symbol']
-                         .head(n_top_symbols).to_list() for variant in top_variants}
-    print(f'Top {len(top_models)} Models:\n{top_models}')
-    print(f'Top {n_top_variants} Variants:\n{top_variants}')
-    print('Top Combinations:')
-    for variant, symbols in top_symbols.items():
-        for symbol in symbols:
-            print(f'("{symbol}", st.{variant}),')
-    return
+    if n_top_symbols is None:
+        top_symbols: dict = {variant:df_filtered.filter(pl.col('strategy') == variant)['symbol'].to_list()
+                             for variant in top_variants}
+    else:
+        top_symbols = {variant:df_filtered.filter(pl.col('strategy') == variant, pl.col('psr') >= 0.5)['symbol']
+        .head(n_top_symbols).to_list() for variant in top_variants}
+
+    if print_to_cli:
+        print(f'Top {len(top_models)} Models:\n{top_models}')
+        print(f'Top {len(top_variants)} Variants:\n{top_variants}')
+        print('Top Combinations:')
+        for variant, symbols in top_symbols.items():
+            for symbol in symbols:
+                print(f'("{symbol}", st.{variant}),')
+    return top_symbols
 
 
 def print_best_parameters(filepath: str):
