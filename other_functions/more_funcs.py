@@ -12,7 +12,7 @@ import glob
 from other_functions import path_functions as pt
 from math import comb
 from heapq import nlargest
-from ONC_original import optimal_number_clusters as onc
+from other_functions.ONC_original import optimal_number_clusters as onc
 
 T = TypeVar('T')
 
@@ -28,7 +28,7 @@ def initial_selection_results(initial_selection_summary_path: str, initial_selec
 
     # preprocess dataframe:
     df_pd: pd.DataFrame = df.to_pandas().dropna(axis=1)
-    df_pd = df_pd.loc[:, (df_pd != 0).any(axis=0)]  # Drops zero columns
+    df_pd = df_pd.loc[:, pd.Series(df_pd != 0).any(axis=0)]  # Drops zero columns
     df_pd = df_pd.T.drop_duplicates().T  # Drops duplicates
 
     # Correlation Matrix

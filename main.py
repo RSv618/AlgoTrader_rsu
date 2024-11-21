@@ -133,7 +133,7 @@ def main() -> None:
                     combinations=combinations,
                     add_next_best=False,
                     use_parallel_compute=use_parallel_compute,
-                    save_returns=None,
+                    save_returns='log_return',
                     save_summary=True,
                     routine=routine,
                     use_synthetic=True)
@@ -430,7 +430,7 @@ def add_ave_psr(summary_df: pl.DataFrame, metrics: list[str]) -> None:
                                    .select(['symbol', 'strategy']).iter_rows())
     dates: list[tuple] = list(summary_df.unique(subset=['date_from', 'date_to'])
                               .select(['date_from', 'date_to']).iter_rows())
-    combinations: list[str] = list(iter_product(strategies, dates))
+    combinations: list = list(iter_product(strategies, dates))
     results: list = []
     for (symbol, strategy), (date_from, date_to) in combinations:
         df_per_group: pl.DataFrame = summary_df.filter((pl.col('strategy') == strategy) &
@@ -758,7 +758,7 @@ def get_train_combinations(symbols: list[str], dates: list[tuple[datetime, datet
     if add_parameters and routine:
         for strategy in strategies_list:
             parameters: list[dict[str, Any]] = strategy.parameters(routine)
-            combinations: list[list[Any]] = list(iter_product([strategy], dates, symbols, parameters))
+            combinations: list = list(iter_product([strategy], dates, symbols, parameters))
             all_combinations.extend(combinations)
         expanded_combinations = [[symbol, *dates, strategy, parameter] for
                                  strategy, dates, symbol, parameter in all_combinations]
@@ -968,14 +968,15 @@ def backtest(symbol: str, date_from: datetime, date_to: datetime, strategy: Modu
     df = df.slice(offset=date_from_index - 1)
 
     # Run the trading strategy loop
-    return run_loop(df, metadata, strategy.trade_logic, start_equity=start_equity, verbose=False)
+    return run_loop(df, metadata, strategy.trade_logic, start_equity=start_equity, verbose=False,
+                    use_synthetic=use_synthetic)
 
 
 def run_loop(df: pl.DataFrame,
              metadata: dict[str, Any],
              strategy_logic: Callable,
              start_equity: float = 100_000.0,
-             verbose: bool = False) -> tuple[pl.DataFrame, dict[str, Any]]:
+             verbose: bool = False, use_synthetic: bool = False) -> tuple[pl.DataFrame, dict[str, Any]]:
     """
     Execute the backtesting loop over the provided DataFrame with the given strategy.
 
@@ -994,7 +995,10 @@ def run_loop(df: pl.DataFrame,
     """
 
     # Default values
-    risk_per_trade: float = 0.001  # 0.001 for normal vs 0.00001 for synth
+    if use_synthetic:
+        risk_per_trade: float = 0.00001  # Synthetic data movement can be extreme so readjust risks
+    else:
+        risk_per_trade = 0.001
     taker: float = 0.0004
     maker: float = 0.0002
     funding: float = 0.0001
