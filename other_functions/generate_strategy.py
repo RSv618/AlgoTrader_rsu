@@ -1,105 +1,4 @@
-from itertools import combinations
-
-
-def is_valid_comparison(left: str, right: str):
-    # Extract the base column names (without the shift)
-    left_base, left_shift = left.split()
-    right_base, right_shift = right.split()
-
-    # Ensure columns are not being compared to themselves
-    if left == right:
-        return False
-
-    if left_shift == right_shift:  # Same bar
-        # open > low (redundant) or open > high (impossible)
-        if left_base == 'open' and right_base in ['low', 'high']:
-            return False
-
-        # high > [open, low, close] (redundant)
-        if left_base == 'high' and right_base in ['open', 'low', 'close']:
-            return False
-
-        # low > [open, high, close] (impossible)
-        if left_base == 'low' and right_base in ['open', 'high', 'close']:
-            return False
-
-        # close > low (redundant) or close > high (impossible)
-        if left_base == 'close' and right_base in ['low', 'high']:
-            return False
-
-    elif left_shift == str(int(right_shift) - 1):  # Comparing current bar to previous bar
-        # don't consider gap up
-        if left_base in ['open', 'low'] and right_base == 'high':
-            return False
-        if left_base == 'open' and right_base in ['close', 'high']:
-            return False
-
-    elif str(int(left_shift) - 1) == right_shift:  # Comparing previous bar to current bar
-        # don't consider gap down
-        if left_base == 'low' and (right_base in ['high', 'open']):
-            return False
-        if left_base in ['close', 'low'] and right_base == 'open':
-            return False
-
-    return True
-
-
-def extract_price_info(price_pair):
-    """Helper function to extract the type (open, high, low) and time (index) from a price pair."""
-
-    def parse_price_str(price_str):
-        price_type, time_idx = price_str.split()
-        return price_type, int(time_idx)
-
-    return parse_price_str(price_pair[0]), parse_price_str(price_pair[1])
-
-
-def no_direct_contradiction(pairs: tuple) -> bool:
-    """Check if there are direct contradictions in the list of pairs
-    (e.g., 'open 0' > 'open 1' and 'open 1' > 'open 0')."""
-    seen_relations: set = set()
-
-    for pair in pairs:
-        (type1, time1), (type2, time2) = extract_price_info(pair)
-        if (type2, time2, type1, time1) in seen_relations:
-            return False  # Contradiction found (reverse relation already exists)
-        seen_relations.add((type1, time1, type2, time2))
-    return True
-
-
-def no_transitive_contradiction(pairs: tuple) -> bool:
-    """Check if there are transitive contradictions in the list of pairs
-    (e.g., 'open 0' > 'open 1' and 'open 1' > 'open 0')."""
-    facts: set = set()
-
-    for pair in pairs:
-        # initialize
-        relations: set = set()
-
-        greater, lesser = pair
-        relations.add(f'{greater} > {lesser}')
-
-        (type1, time1), (type2, time2) = extract_price_info(pair)
-        if type1 in ['open', 'close', 'low']:
-            if type2 in ['open', 'close', 'high']:
-                relations.add(f'high {time1} > low {time2}')
-                relations.add(f'{type1} {time1} > low {time2}')
-                relations.add(f'high {time1} > {type2} {time2}')
-            else:
-                relations.add(f'high {time1} > {type2} {time2}')
-        else:
-            if type2 in ['open', 'close', 'high']:
-                relations.add(f'{type1} {time1} > low {time2}')
-
-        for relation in relations:
-            a, b = relation.split(' > ')
-            reverse_relation: str = f'{b} > {a}'
-            if reverse_relation in facts:
-                return False
-            else:
-                facts.add(relation)
-    return True
-
+import numpy as np
 
 def str_to_plstr(string_int: str, reverse=False) -> str:
     a, b = string_int.split()
@@ -113,22 +12,9 @@ def str_to_plstr(string_int: str, reverse=False) -> str:
     return f'pl.col("{a}").shift({b})'
 
 
-if __name__ == '__main__':
-    # Parameters
-    seeds: list[int] = [
-    ]
-
-    shifts = [0, 1, 2, 3]  # Mistake: 4 should be 3. I don't think it matters much
-
-    # Create a mapping of shifted column expressions
-    col_shifts: list[str] = list(f"{col} {shift}" for col in ['open', 'high', 'low', 'close'] for shift in shifts)
-
-    # Generate all valid comparisons
-    valid_comparison: list = list((left_col, right_col) for left_col in col_shifts for right_col in col_shifts
-                                  if is_valid_comparison(left_col, right_col))
-
-    combi: list = list(combinations(valid_comparison, 3))
-    combi = [comb for comb in combi if (no_direct_contradiction(comb) and no_transitive_contradiction(comb))]
+def generate_strategy_from_seed(seeds: list[int],
+                                combination_path: str = r'other_functions/3bar_3conditions_104876.npy'):
+    combi: np.ndarray = np.load(combination_path)
 
     for seed in seeds:
         lines = '''import polars as pl
@@ -145,9 +31,9 @@ def indicators(df: pl.DataFrame, parameter: dict[str, Any]) -> pl.DataFrame:
                          & (REPLACE_RC < REPLACE_RD)
                          & (REPLACE_RE < REPLACE_RF))
 
-    df = df.with_columns(stdev=pl.col('close').rolling_std(parameter['stdev']),
-                         trigger=pl.when(up_trigger).then(1)
-                         .otherwise(pl.when(down_trigger).then(-1).otherwise(0)))
+    df = df.with_columns(stdev=c.rolling_std(parameter['stdev']),
+                     uptrend_trigger=uptrend_trigger.cast(pl.Boolean),
+                     downtrend_trigger=downtrend_trigger.cast(pl.Boolean))
     return df
 
 
@@ -161,58 +47,63 @@ def trade_logic(prev_row: np.ndarray, col: dict[str, int], prev_position: int,
     qty = 0 if exit_order else qty
     """
 
-    # To initialize persistent variables:
-    # if 'example' not in persist:
-    #     persist['example'] = 0
-
     def qty():
         return risk_per_trade * prev_balance / (prev_row.item(col['stdev']) * sqrt_n_per_day)
 
-    trigger: bool = prev_row.item(col['trigger'])
-    if 'count' not in persist:
-        persist['count'] = 0
+    uptrend_trigger: bool = prev_row.item(col['uptrend_trigger'])
+    downtrend_trigger: bool = prev_row.item(col['downtrend_trigger'])
+    max_count: int = parameter['count']
+    count = persist['count']
 
     if prev_position == 0:  # if no position
-        persist['count'] = 0
-        if trigger > 0:
+        if uptrend_trigger:
             return [['buy_market', 0, qty()]]
-        if trigger < 0:
+        if downtrend_trigger:
             return [['sell_market', 0, qty()]]
 
     elif prev_position == 1:  # if long
-        persist['count'] += 1
-        if trigger < 0:
-            return [['sell_market', 0, 0], ['sell_market', 0, qty()]]
-        if persist['count'] >= parameter['time_exit']:
+        count += 1
+        if count >= max_count:
+            persist['count'] = 0
             return [['sell_market', 0, 0]]
+        else:
+            persist['count'] = count
+
+        if downtrend_trigger:
+            return [['sell_market', 0, 0], ['sell_market', 0, qty()]]
 
     elif prev_position == -1:  # if short
-        persist['count'] += 1
-        if trigger > 0:
-            return [['buy_market', 0, 0], ['buy_market', 0, qty()]]
-        if persist['count'] >= parameter['time_exit']:
+        count += 1
+        if count >= max_count:
+            persist['count'] = 0
             return [['buy_market', 0, 0]]
+        else:
+            persist['count'] = count
+
+        if uptrend_trigger:
+            return [['buy_market', 0, 0], ['buy_market', 0, qty()]]
 
     return []
 
 
 def parameters(routine: str | None = None) -> list:
     # parameter scaling: [1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
-    headers: list[str] = ['stdev', 'time_exit']
+    headers: list[str] = ['stdev', 'count']
     match routine:
         case 'parameter_range':
             stdev: list[int] = [8, 16, 32, 64, 128, 256, 512]
-            time_exit: list[int] = [8, 16, 32, 64, 128, 256, 512]
+            count: list[int] = [8, 16, 32, 64, 128, 256, 512]
         case _:
             stdev = [512]
-            time_exit = [128, 256, 512]
+            count = [512]
 
-    values: Any = iter_product(stdev, time_exit)
+    values: Any = iter_product(stdev, count)
 
     dict_parameters: list[dict] = [dict(zip(headers, value)) for value in values]
     return dict_parameters
 
     '''
+
         (a, b), (c, d), (e, f) = combi[seed]
         print(f'{seed=} {a=} {b=} {f=}')
         ra = str_to_plstr(a, reverse=True)
@@ -228,7 +119,7 @@ def parameters(routine: str | None = None) -> list:
         e = str_to_plstr(e)
         f = str_to_plstr(f)
 
-        with open(f'C:\\Users\\rober\\PycharmProjects\\AlgoTrader\\strategies_package\\rsPattern{seed}.py',
+        with open(f'C:\\Users\\rober\\PycharmProjects\\AlgoTrader\\strategies_package\\Y_custom_{seed}.py',
                   'w') as file:
             lines = lines.replace('REPLACE_A', a)
             lines = lines.replace('REPLACE_B', b)
@@ -244,3 +135,7 @@ def parameters(routine: str | None = None) -> list:
             lines = lines.replace('REPLACE_RF', rf)
             file.writelines(lines)
             print(f'{seed} done. Strategy created.')
+
+
+if __name__ == '__main__':
+    generate_strategy_from_seed([])
