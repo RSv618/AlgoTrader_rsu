@@ -39,18 +39,18 @@ def get_user_input() -> tuple[
         "ADAUSDT",
         "BNBUSDT",
         "BTCUSDT",
-        "EOSUSDT",
-        "ETCUSDT",
+        # "EOSUSDT",
+        # "ETCUSDT",
         "ETHUSDT",
-        "ICXUSDT",
-        "IOTAUSDT",
-        "LTCUSDT",
-        "NEOUSDT",
-        "NULSUSDT",
-        "ONTUSDT",
-        "QTUMUSDT",
-        "TRXUSDT",
-        "VETUSDT",
+        # "ICXUSDT",
+        # "IOTAUSDT",
+        # "LTCUSDT",
+        # "NEOUSDT",
+        # "NULSUSDT",
+        # "ONTUSDT",
+        # "QTUMUSDT",
+        # "TRXUSDT",
+        # "VETUSDT",
         "XLMUSDT",
         "XRPUSDT",
     ]
@@ -571,7 +571,7 @@ def get_user_input() -> tuple[
     strategies_list = [strat for strat in strategies_list if strat.__name__[-3:] != '_ct']
 
     routine: str = 'custom'
-    dates = [(datetime(2019,1,1), datetime(2021,1,1))]
+    dates = [(datetime(2023,1,1), datetime(2024,1,1))]
 
     """
     Example:
